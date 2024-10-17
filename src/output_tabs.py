@@ -7,17 +7,22 @@ class OutputTabs(QTabWidget):
         self.setStyleSheet("""
             QTabWidget::pane {
                 border-radius: 0px;
-                background: #FFE0B0;
+                top: -2px;
             }
             QTabBar::tab {
                 background: #FFF4E2;
                 padding: 10px;
-                border-top-left-radius: 3px;
-                border-top-right-radius: 3px;
+                border-radius: 0px;
                 font-size: 14px;
+                font-weight: bold;
             }
             QTabBar::tab:selected {
                 background: #FFE0B0;
+                border: 2px solid #000;
+                margin-bottom: -2px;
+            }
+            QTabBar::tab:!selected {
+                top: -2px;
             }
         """)
 
@@ -26,23 +31,25 @@ class OutputTabs(QTabWidget):
         self.response_text.setReadOnly(True)
         self.response_text.setStyleSheet("""
             QTextEdit {
-                border-radius: 5px;
-                padding: 10px;
+                border-radius: 0px;
                 font-family: Consolas, Monaco, monospace;
                 font-size: 14px;
+                border: 2px solid #000;
+                background: #FFF4E2;
             }
         """)
-        self.addTab(self.response_text, "Response")
+        self.addTab(self.response_text, "RESPONSE")
 
         # Headers tab
         self.headers_text = QTextEdit()
         self.headers_text.setReadOnly(True)
         self.headers_text.setStyleSheet("""
             QTextEdit {
-                border-radius: 5px;
-                padding: 10px;
+                border-radius: 0px;
                 font-family: Consolas, Monaco, monospace;
                 font-size: 14px;
+                border: 2px solid #000;
+                background: #FFF4E2;
             }
         """)
-        self.addTab(self.headers_text, "Response Headers")
+        self.addTab(self.headers_text, "HEADERS")

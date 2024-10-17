@@ -1,7 +1,8 @@
-from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QHBoxLayout, QVBoxLayout
+from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout
 from output_tabs import OutputTabs
 from input_tabs import InputTabs
 from request_bar import RequestBar
+from utils import parse_json_body
 import sys, requests, json
 
 class HttpClientWindow(QMainWindow):
@@ -20,8 +21,8 @@ class HttpClientWindow(QMainWindow):
         self.setCentralWidget(main_widget)
         # Connect signals
         self.request_bar.send_button.clicked.connect(self.send_request)
-        self.request_bar.url_input.returnPressed.connect(self.send_request)
-
+        self.request_bar.url_input.returnPressed.connect(self.send_request)        
+    
     def send_request(self):
         current_url = self.request_bar.url_input.text()
         if current_url.replace("http://", "").replace("https://", "") != "":
@@ -33,14 +34,16 @@ class HttpClientWindow(QMainWindow):
                 data = self.input_tab_widget.get_body()
                 if data:
                     try:
-                        data = json.loads(data.replace("'", '"'))
-                        print(data)
-                    except json.JSONDecodeError:
-                        self.output_tab_widget.response_text.setText(f"Error: Invalid JSON in body")
+                        data_dict = parse_json_body(data)
+                        if isinstance(data_dict, str):
+                            self.output_tab_widget.response_text.setText(data_dict)
+                            return
+                    except Exception as e:
+                        self.output_tab_widget.response_text.setText(f"Error parsing JSON: {str(e)}")
                         return
                 else:
-                    data = None
-                r = requests.request(method, url, headers=headers, params=params, json=data)
+                    data_dict = None
+                r = requests.request(method, url, headers=headers, params=params, json=data_dict)
                 formatted_headers = self.format_headers(r.headers)
                 self.output_tab_widget.headers_text.setText(formatted_headers)
                 formatted_response = self.format_response(r)

@@ -1,8 +1,9 @@
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QComboBox, QLineEdit, QPushButton
 from PySide6.QtCore import Signal
+from utils import apply_shadow
 
 class UrlInput(QWidget):
-    returnPressed = Signal()  # Custom signal to emulate QLineEdit's returnPressed
+    returnPressed = Signal() 
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -14,11 +15,12 @@ class UrlInput(QWidget):
         self.protocol.addItems(["https://", "http://"])
         self.protocol.setStyleSheet("""
             QComboBox {
-                border-top-left-radius: 5px;
-                border-bottom-left-radius: 5px;
+                border-radius: 0px;
                 padding: 5px;
                 background: #FFF4E2;
                 font-size: 16px;
+                border: 2px solid #000;
+                font-weight: bold;
             }
         """)
         self.protocol.setFixedWidth(90)
@@ -27,11 +29,12 @@ class UrlInput(QWidget):
         self.url.setPlaceholderText("google.com")
         self.url.setStyleSheet("""
             QLineEdit {
-                border-top-right-radius: 5px;
-                border-bottom-right-radius: 5px;
-                border-left: none;
+                border-radius: 0px;
                 padding: 5px;
+                margin-left: 6px;
                 font-size: 16px;
+                border: 2px solid #000;
+                font-weight: bold;
             }
         """)
         self.url.returnPressed.connect(self.returnPressed.emit)
@@ -60,23 +63,28 @@ class RequestBar(QHBoxLayout):
         self.http_verb.setStyleSheet("""
             QComboBox {
                 background-color: #FFF4E2;
-                border-radius: 5px;
+                border-radius: 0px;
                 padding: 5px;
                 font-size: 16px;
+                border: 2px solid #000;
+                font-weight: bold;
             }
         """)
         self.addWidget(self.http_verb)
 
-        self.url_input = UrlInput()  # Using our custom UrlInput widget
-        self.addWidget(self.url_input, 1)  # 1 is the stretch factor
+        self.url_input = UrlInput()
+        self.addWidget(self.url_input, 1)
 
         self.send_button = QPushButton("SEND")
+        apply_shadow(self.send_button)
         self.send_button.setStyleSheet("""
             QPushButton {
                 background-color: #FFF4E2;
-                border-radius: 5px;
+                border-radius: 0px;
                 padding: 5px 15px;
                 font-size: 16px;
+                border: 2px solid #000;
+                font-weight: bold;
             }
             QPushButton:hover {
                 background-color: #FFE0B0;
