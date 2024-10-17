@@ -26,7 +26,7 @@ class UrlInput(QWidget):
         self.protocol.setFixedWidth(90)
 
         self.url = QLineEdit()
-        self.url.setPlaceholderText("google.com")
+        self.url.setPlaceholderText("url goes here! omit the protocol")
         self.url.setStyleSheet("""
             QLineEdit {
                 border-radius: 0px;

@@ -1,4 +1,29 @@
 from PySide6.QtWidgets import QTextEdit, QTabWidget
+from PySide6.QtGui import QTextOption, QFontDatabase
+from PySide6.QtCore import Qt, QSize
+
+class WrappingTextEdit(QTextEdit):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWordWrapMode(QTextOption.WrapMode.WrapAnywhere)
+        self.setLineWrapMode(QTextEdit.LineWrapMode.WidgetWidth)
+        self.setStyleSheet("""
+            QTextEdit {
+                border-radius: 0px;
+                font-family: Consolas, Monaco, monospace;
+                font-size: 14px;
+                border: 2px solid #000;
+                background: #FFF4E2;
+            }
+        """)
+        
+        # Set a monospace font
+        font = QFontDatabase.systemFont(QFontDatabase.FixedFont)
+        font.setPointSize(10)  # Adjust size as needed
+        self.setFont(font)
+        
+    def sizeHint(self):
+        return QSize(600, 400)  # Adjust as needed
 
 class OutputTabs(QTabWidget):
     def __init__(self):
@@ -27,29 +52,11 @@ class OutputTabs(QTabWidget):
         """)
 
         # Response tab
-        self.response_text = QTextEdit()
+        self.response_text = WrappingTextEdit()
         self.response_text.setReadOnly(True)
-        self.response_text.setStyleSheet("""
-            QTextEdit {
-                border-radius: 0px;
-                font-family: Consolas, Monaco, monospace;
-                font-size: 14px;
-                border: 2px solid #000;
-                background: #FFF4E2;
-            }
-        """)
         self.addTab(self.response_text, "RESPONSE")
 
         # Headers tab
-        self.headers_text = QTextEdit()
+        self.headers_text = WrappingTextEdit()
         self.headers_text.setReadOnly(True)
-        self.headers_text.setStyleSheet("""
-            QTextEdit {
-                border-radius: 0px;
-                font-family: Consolas, Monaco, monospace;
-                font-size: 14px;
-                border: 2px solid #000;
-                background: #FFF4E2;
-            }
-        """)
         self.addTab(self.headers_text, "HEADERS")

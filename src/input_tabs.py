@@ -1,118 +1,13 @@
-from PySide6.QtWidgets import QTextEdit, QTabWidget, QScrollArea, QTableWidget, QHeaderView
+from PySide6.QtWidgets import (QTabWidget, QVBoxLayout, QHBoxLayout, QWidget,
+                               QRadioButton, QButtonGroup, QLabel, QScrollArea)
 from PySide6.QtGui import QKeyEvent, QTextCursor
-from PySide6.QtCore import Qt, QEvent
-
-class AutoClosingTextEdit(QTextEdit):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.auto_close_pairs = {
-            '"': '"',
-            "'": "'",
-            '(': ')',
-            '[': ']',
-            '{': '}',
-            '<': '>'
-        }
-
-    def keyPressEvent(self, event):
-        if event.key() in (Qt.Key_Enter, Qt.Key_Return):
-            self.handleEnterKey(event)
-        elif event.text() in self.auto_close_pairs:
-            self.handleAutoClose(event.text())
-        elif event.key() == Qt.Key_Backspace:
-            self.handleBackspace()
-        else:
-            super().keyPressEvent(event)
-
-    def handleAutoClose(self, opening_char):
-        cursor = self.textCursor()
-        closing_char = self.auto_close_pairs[opening_char]
-        cursor.insertText(opening_char + closing_char)
-        cursor.movePosition(QTextCursor.Left, QTextCursor.MoveAnchor, 1)
-        self.setTextCursor(cursor)
-
-    def handleEnterKey(self, event):
-        cursor = self.textCursor()
-        current_line = cursor.block().text()
-        indent = len(current_line) - len(current_line.lstrip())
-        
-        super().keyPressEvent(event)  # Default Enter key behavior
-        
-        cursor = self.textCursor()
-        cursor.insertText(' ' * indent)
-        self.setTextCursor(cursor)
-
-    def handleBackspace(self):
-        cursor = self.textCursor()
-        if not cursor.hasSelection():
-            cursor.movePosition(QTextCursor.Left, QTextCursor.KeepAnchor, 1)
-            cursor.movePosition(QTextCursor.Right, QTextCursor.KeepAnchor, 1)
-            selected_text = cursor.selectedText()
-            if selected_text in self.auto_close_pairs.items():
-                cursor.movePosition(QTextCursor.Left, QTextCursor.MoveAnchor, 1)
-                cursor.deleteChar()
-                cursor.deleteChar()
-                self.setTextCursor(cursor)
-                return
-        super().keyPressEvent(QKeyEvent(QEvent.KeyPress, Qt.Key_Backspace, Qt.NoModifier))
-
-class KeyValueTable(QTableWidget):
-    def __init__(self, parent=None):
-        super().__init__(1, 2, parent)
-        self.setHorizontalHeaderLabels(["KEY", "VALUE"])
-        header = self.horizontalHeader()
-        header.setSectionResizeMode(QHeaderView.Stretch)
-        self.verticalHeader().setVisible(False)
-        self.setStyleSheet("""
-            QTableWidget {
-                border: none;
-                font-family: Consolas, Monaco, monospace;
-                font-size: 14px;
-            }
-            QHeaderView::section {
-                background-color: #E6E6E6;
-                padding: 4px;
-                font-weight: bold;
-            }
-        """)
-        self.cellChanged.connect(self.on_cell_changed)
-
-    def keyPressEvent(self, event: QKeyEvent):
-        if event.key() == Qt.Key_Return or event.key() == Qt.Key_Enter:
-            self.add_row()
-        elif event.key() == Qt.Key_Backspace:
-            current_row = self.currentRow()
-            if current_row > 0 and self.is_row_empty(current_row):
-                self.removeRow(current_row)
-                self.setCurrentCell(current_row - 1, self.currentColumn())
-        super().keyPressEvent(event)
-
-    def add_row(self):
-        if self.is_last_row_empty():
-            return
-        self.setRowCount(self.rowCount() + 1)
-
-    def is_row_empty(self, row):
-        return (self.item(row, 0) is None or self.item(row, 0).text() == "") and \
-               (self.item(row, 1) is None or self.item(row, 1).text() == "")
-
-    def is_last_row_empty(self):
-        return self.is_row_empty(self.rowCount() - 1)
-
-    def on_cell_changed(self, row, column):
-        if row == self.rowCount() - 1 and not self.is_row_empty(row):
-            self.add_row()
-
-    def get_pairs(self):
-        pairs = {}
-        for row in range(self.rowCount()):
-            key_item = self.item(row, 0)
-            value_item = self.item(row, 1)
-            if key_item and value_item and key_item.text():
-                pairs[key_item.text()] = value_item.text()
-        return pairs
+from PySide6.QtCore import Signal
+from auto_closing_text import AutoClosingTextEdit
+from key_value_table import KeyValueTable
 
 class InputTabs(QTabWidget):
+    contentTypeChanged = Signal(str)
+    
     def __init__(self):
         super().__init__()
         self.setStyleSheet("""
@@ -137,16 +32,55 @@ class InputTabs(QTabWidget):
                 top: -2px;
             }
         """)
+        
+        body_widget = QWidget()
+        body_widget.setStyleSheet("""
+            QWidget {
+                border-radius: 0px;
+                border: 2px solid #000;
+            }
+        """)
+        body_layout = QVBoxLayout(body_widget)
+        
+        content_type_layout = QHBoxLayout()
+        
+        self.content_type_group = QButtonGroup(self)
+        content_types = [
+            ("none", "none"),
+            ("x-www-form-urlencoded","x-www-form-urlencoded"),
+            ("raw", "raw (json)")
+        ]
+        
+        for value, text in content_types:
+            radio_button = QRadioButton(text)
+            radio_button.setStyleSheet("""
+                QRadioButton {
+                    border: none;
+                    font-weight: bold;
+                    font-family: Consolas, Monaco, monospace;
+                }
+            """)
+            self.content_type_group.addButton(radio_button)
+            content_type_layout.addWidget(radio_button)
+            if value == "none":
+                radio_button.setChecked(True)
+                
+        self.content_type_group.buttonClicked.connect(self.on_content_type_changed)
+        content_type_layout.addStretch()
+        
         self.body_text = AutoClosingTextEdit()
         self.body_text.setStyleSheet("""
             QTextEdit {
                 font-family: Consolas, Monaco, monospace;
                 font-size: 14px;
-                border: 2px solid #000;
+                border: none;
             }
         """)
         self.body_text.setPlaceholderText("Enter request body here (e.g., JSON)")
-        self.addTab(self.body_text, "BODY")
+        body_layout.addLayout(content_type_layout)
+        body_layout.addWidget(self.body_text)
+
+        self.addTab(body_widget, "BODY")
         
         params_scroll = QScrollArea()
         self.params_table = KeyValueTable()
@@ -174,9 +108,29 @@ class InputTabs(QTabWidget):
         """)
         self.addTab(headers_scroll, "HEADERS")
         
-        
+    def on_content_type_changed(self, button):
+        content_type = self.get_content_type()
+        self.contentTypeChanged.emit(content_type)
+        if content_type is None:
+            self.body_text.setPlaceholderText("This request does not have a body")
+            self.body_text.setReadOnly(True)
+        else:
+            self.body_text.setPlaceholderText("Enter request body here")
+            self.body_text.setReadOnly(False)
+    
+    def get_content_type(self):
+        selected_button = self.content_type_group.checkedButton()
+        content_type = selected_button.text()
+        match content_type:
+            case "raw (json)":
+                return "application/json"
+            case "x-www-form-urlencoded":
+                return "application/x-www-form-urlencoded"
+            case _:
+                return None
+    
     def get_body(self):
-        return self.body_text.toPlainText()
+        return self.body_text.toPlainText() if not self.body_text.isReadOnly() else None
 
     def get_params(self):
         return self.params_table.get_pairs()
